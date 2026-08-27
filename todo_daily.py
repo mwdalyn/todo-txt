@@ -21,13 +21,13 @@ TODOS_DIR.mkdir(exist_ok=True)
 # =========================
 # Load categories
 # =========================
-DEFAULT_CATEGORIES = ["Social", "Health", "Professional"]
+DEFAULT_CATEGORIES = ["Please create and update categories.json file in base directory"]
 
-if not CATEGORIES_FILE.exists(): # If categories.json missing, infill with default
+if not CATEGORIES_FILE.exists(): # If categories.json missing, infill with default 
 	CATEGORIES_FILE.write_text(json.dumps({"categories": DEFAULT_CATEGORIES}, indent=2), encoding="utf-8")
 
 with CATEGORIES_FILE.open("r", encoding="utf-8") as f: # Update live categories
-	categories = json.load(f).get("categories", DEFAULT_CATEGORIES)
+	categories = json.load(f).get("categories", DEFAULT_CATEGORIES) # NOTE: Stopgap solution, want to prompt user directly if categories is "missing"
 
 # =========================
 # Determine today & latest file
@@ -41,9 +41,11 @@ last_file = existing_files[-1] if existing_files else None
 # =========================
 # Carrover for unfinished tasks
 # =========================
-TASK_PATTERN = re.compile(r"- \[( |x)\] (.*)")
+# TASK_PATTERN = re.compile(r"- \[( |x)\] (.*)")
+TASK_PATTERN = re.compile(r"- \[(.)\] (.*)") # More permissive
 
 def get_unfinished_tasks(file_path, category):
+	"""Unfinished tasks to carry over with persistent category."""
 	unfinished = []
 	if not file_path or not file_path.exists():
 		return unfinished
@@ -55,9 +57,26 @@ def get_unfinished_tasks(file_path, category):
 			continue
 		match = TASK_PATTERN.match(line)
 		if match and current_cat == category:
-			if match.group(1) == " ":  # unchecked task
+			if match.group(1) == " ":
 				unfinished.append(match.group(2))
 	return unfinished
+
+def get_orphaned_tasks(file_path, known_categories):
+	"""Unfinished tasks whose category no longer exists."""
+	orphaned = []
+	if not file_path or not file_path.exists():
+		return orphaned
+	current_cat = None
+	for line in file_path.read_text(encoding="utf-8").splitlines():
+		line = line.strip()
+		if line.startswith("## "):
+			current_cat = line[3:].strip()
+			continue
+		match = TASK_PATTERN.match(line)
+		if match and current_cat not in known_categories:
+			if match.group(1) == " ":
+				orphaned.append(f"[{current_cat}] {match.group(2)}")
+	return orphaned
 
 # =========================
 # Check and create today's file if not found
@@ -71,6 +90,13 @@ if not today_file.exists():
 			for task_text in get_unfinished_tasks(last_file, cat):
 				lines.append(f"- [ ] {task_text}")
 		lines.append("")  # Add empty line after category
+  
+	orphans = get_orphaned_tasks(last_file, set(categories)) if last_file else []
+	if orphans:
+		lines.append("## Orphaned")
+		for task_text in orphans:
+			lines.append(f"- [ ] {task_text}")
+		lines.append("")
 		
 	# Write today's file
 	today_file.write_text("\n".join(lines), encoding="utf-8")
