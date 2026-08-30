@@ -21,7 +21,7 @@ TODOS_DIR.mkdir(exist_ok=True)
 # =========================
 # Load categories
 # =========================
-DEFAULT_CATEGORIES = ["Please create and update categories.json file in base directory"]
+DEFAULT_CATEGORIES = ["Please create and update categories.json file in base directory for your todo-app!"]
 
 if not CATEGORIES_FILE.exists(): # If categories.json missing, infill with default 
 	CATEGORIES_FILE.write_text(json.dumps({"categories": DEFAULT_CATEGORIES}, indent=2), encoding="utf-8")
@@ -42,13 +42,15 @@ last_file = existing_files[-1] if existing_files else None
 # Carrover for unfinished tasks
 # =========================
 # TASK_PATTERN = re.compile(r"- \[( |x)\] (.*)")
-TASK_PATTERN = re.compile(r"- \[(.)\] (.*)") # More permissive
+# TASK_PATTERN = re.compile(r"- \[(.)\] (.*)") # More permissive X case formatting
+TASK_PATTERN = re.compile(r"- (!)?\[(.)\] (.*)") # More permissive and allows for urgency marker '- ![ ]'
 
 def get_unfinished_tasks(file_path, category):
-	"""Unfinished tasks to carry over with persistent category."""
-	unfinished = []
+	"""Returns unfinished tasks as list of (is_priority: bool, text: str), priority first."""
+	priority_tasks = []
+	normal_tasks = []
 	if not file_path or not file_path.exists():
-		return unfinished
+		return []
 	current_cat = None
 	for line in file_path.read_text(encoding="utf-8").splitlines():
 		line = line.strip()
@@ -57,9 +59,10 @@ def get_unfinished_tasks(file_path, category):
 			continue
 		match = TASK_PATTERN.match(line)
 		if match and current_cat == category:
-			if match.group(1) == " ":
-				unfinished.append(match.group(2))
-	return unfinished
+			is_priority, state, text = bool(match.group(1)), match.group(2), match.group(3)
+			if state == " ":
+				(priority_tasks if is_priority else normal_tasks).append(text)
+	return [(True, t) for t in priority_tasks] + [(False, t) for t in normal_tasks]
 
 def get_orphaned_tasks(file_path, known_categories):
 	"""Unfinished tasks whose category no longer exists."""
@@ -86,9 +89,10 @@ if not today_file.exists():
 	for cat in categories:
 		lines.append(f"## {cat}") # Start section
 		lines.append("- [ ] ") # Add one empty checkbox
-		if last_file: # Carry over unfinished tasks from previous day(s)
-			for task_text in get_unfinished_tasks(last_file, cat):
-				lines.append(f"- [ ] {task_text}")
+		if last_file: # Carry over unfinished tasks from previous day(s); include priority
+			for is_priority, task_text in get_unfinished_tasks(last_file, cat):
+				prefix = "- ![ ] " if is_priority else "- [ ] "
+				lines.append(f"{prefix}{task_text}")
 		lines.append("")  # Add empty line after category
   
 	orphans = get_orphaned_tasks(last_file, set(categories)) if last_file else []
