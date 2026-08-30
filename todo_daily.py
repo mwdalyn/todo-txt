@@ -30,6 +30,17 @@ with CATEGORIES_FILE.open("r", encoding="utf-8") as f: # Update live categories
 	categories = json.load(f).get("categories", DEFAULT_CATEGORIES) # NOTE: Stopgap solution, want to prompt user directly if categories is "missing"
 
 # =========================
+# Load recurring tasks
+# =========================
+RECURRING_FILE = BASE_DIR / "recurring.json"
+
+if not RECURRING_FILE.exists():
+	RECURRING_FILE.write_text(json.dumps({cat: [] for cat in categories}, indent=2), encoding="utf-8")
+
+with RECURRING_FILE.open("r", encoding="utf-8") as f:
+	recurring = json.load(f)
+
+# =========================
 # Determine today & latest file
 # =========================
 today_str = datetime.now().strftime("%Y-%m-%d")
@@ -41,7 +52,6 @@ last_file = existing_files[-1] if existing_files else None
 # =========================
 # Carrover for unfinished tasks
 # =========================
-# TASK_PATTERN = re.compile(r"- \[( |x)\] (.*)")
 # TASK_PATTERN = re.compile(r"- \[(.)\] (.*)") # More permissive X case formatting
 TASK_PATTERN = re.compile(r"- (!)?\[(.)\] (.*)") # More permissive and allows for urgency marker '- ![ ]'
 
@@ -77,7 +87,7 @@ def get_orphaned_tasks(file_path, known_categories):
 			continue
 		match = TASK_PATTERN.match(line)
 		if match and current_cat not in known_categories:
-			if match.group(1) == " ":
+			if match.group(2) == " ": # Updated to account for '!' priority optional tagging
 				orphaned.append(f"[{current_cat}] {match.group(2)}")
 	return orphaned
 
@@ -88,11 +98,16 @@ if not today_file.exists():
 	lines = []
 	for cat in categories:
 		lines.append(f"## {cat}") # Start section
-		lines.append("- [ ] ") # Add one empty checkbox
+		carried_texts = set()
 		if last_file: # Carry over unfinished tasks from previous day(s); include priority
 			for is_priority, task_text in get_unfinished_tasks(last_file, cat):
 				prefix = "- ![ ] " if is_priority else "- [ ] "
 				lines.append(f"{prefix}{task_text}")
+				carried_texts.add(task_text)
+		for recurring_text in recurring.get(cat, []): # Add recurring tasks, skip if already carried over
+			if recurring_text not in carried_texts:
+				lines.append(f"- [ ] {recurring_text}")
+		lines.append("- [ ] ") # Add one empty checkbox
 		lines.append("")  # Add empty line after category
   
 	orphans = get_orphaned_tasks(last_file, set(categories)) if last_file else []
