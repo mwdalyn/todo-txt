@@ -127,6 +127,51 @@ def main():
 		today_file.write_text("\n".join(lines), encoding="utf-8")
 
 	# =========================
+	# Cleanup: remove no-progress days
+	# =========================
+	def get_all_tasks(file_path):
+		"""Returns (list of (category, text) for every task line, has_any_completed: bool)."""
+		tasks = []
+		has_completed = False
+		current_cat = None
+		for line in file_path.read_text(encoding="utf-8").splitlines():
+			line = line.strip()
+			if line.startswith("## "):
+				current_cat = line[3:].strip()
+				continue
+			match = TASK_PATTERN.match(line)
+			if match:
+				state, text = match.group(2), match.group(3).strip()
+				tasks.append((current_cat, text))
+				if state != " ":
+					has_completed = True
+		return tasks, has_completed
+
+	def cleanup_stale_days():
+		"""Deletes any day (except the first ever and today) that had zero completions
+		and whose task contents exactly match the prior *kept* day — i.e. no progress
+		was recorded that day."""
+		all_files = sorted(TODOS_DIR.glob("todo_*.txt"))
+		if len(all_files) <= 1:
+			return  # nothing to compare against
+
+		keep_file = all_files[0]  # first day ever — never eligible for deletion
+		keep_tasks, _ = get_all_tasks(keep_file)
+
+		for f in all_files[1:]:
+			if f == today_file:
+				continue  # never touch today's file, it's still in progress
+			tasks, has_completed = get_all_tasks(f)
+			if not has_completed and tasks == keep_tasks:
+				f.unlink()
+				# keep_file/keep_tasks stay as the last *real* day for next comparison
+			else:
+				keep_file = f
+				keep_tasks = tasks
+
+	cleanup_stale_days()
+ 
+	# =========================
 	# Open today's file
 	# =========================
 	subprocess.Popen(["notepad.exe", str(today_file)])
