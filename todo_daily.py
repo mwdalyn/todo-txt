@@ -47,6 +47,17 @@ def main():
 		recurring = json.load(f)
 
 	# =========================
+	# Load streaks
+	# =========================
+	STREAKS_FILE = BASE_DIR / "streaks.json"
+
+	if not STREAKS_FILE.exists():
+		STREAKS_FILE.write_text(json.dumps({}), encoding="utf-8")
+
+	with STREAKS_FILE.open("r", encoding="utf-8") as f:
+		streaks = json.load(f)  # {"category": {"task text": streak_count}}
+
+	# =========================
 	# Determine today & latest file
 	# =========================
 	today_str = datetime.now().strftime("%Y-%m-%d")
@@ -97,10 +108,42 @@ def main():
 					orphaned.append(f"[{current_cat}] {match.group(3)}")
 		return orphaned
 
+	def was_task_completed(file_path, category, task_text):
+		"""Checks if a specific task (exact text match) was checked off in a given file."""
+		if not file_path or not file_path.exists():
+			return False
+		current_cat = None
+		for line in file_path.read_text(encoding="utf-8").splitlines():
+			line = line.strip()
+			if line.startswith("## "):
+				current_cat = line[3:].strip()
+				continue
+			match = TASK_PATTERN.match(line)
+			if match and current_cat == category:
+				state, text = match.group(2), match.group(3).strip()
+				if text == task_text and state != " ":
+					return True
+		return False
+
+
+	def update_streaks(streaks, last_file, categories, recurring):
+		for cat in categories:
+			for task_text in recurring.get(cat, []):
+				cat_streaks = streaks.setdefault(cat, {})
+				if was_task_completed(last_file, cat, task_text):
+					cat_streaks[task_text] = cat_streaks.get(task_text, 0) + 1
+				else:
+					cat_streaks[task_text] = 0
+		return streaks
+
 	# =========================
 	# Check and create today's file if not found
 	# =========================
 	if not today_file.exists():
+		# Update streaks quickly
+		streaks = update_streaks(streaks, last_file, categories, recurring)
+		STREAKS_FILE.write_text(json.dumps(streaks, indent=2), encoding="utf-8")  
+		# Create and populate today's file
 		lines = []
 		for cat in categories:
 			lines.append(f"## {cat}") # Start section
@@ -122,10 +165,13 @@ def main():
 			for task_text in orphans:
 				lines.append(f"- [ ] {task_text}")
 			lines.append("")
-			
+	
+		# Quickly cleanup stale days before writing new file
+		cleanup_stale_days()
+
 		# Write today's file
 		today_file.write_text("\n".join(lines), encoding="utf-8")
-
+		
 	# =========================
 	# Cleanup: remove no-progress days
 	# =========================
@@ -168,8 +214,6 @@ def main():
 			else:
 				keep_file = f
 				keep_tasks = tasks
-
-	cleanup_stale_days()
  
 	# =========================
 	# Open today's file
