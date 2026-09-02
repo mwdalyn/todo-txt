@@ -1,0 +1,40 @@
+
+[2026-09-01T05:28:57.693619]
+Traceback (most recent call last):
+  File "C:\Personal\Workspace\Python\todo-app\todo_daily.py", line 225, in <module>
+    main()
+  File "C:\Personal\Workspace\Python\todo-app\todo_daily.py", line 170, in main
+    cleanup_stale_days()
+UnboundLocalError: local variable 'cleanup_stale_days' referenced before assignment
+
+[2026-09-01T05:29:36.898816]
+Traceback (most recent call last):
+  File "C:\Personal\Workspace\Python\todo-app\todo_daily.py", line 225, in <module>
+    main()
+  File "C:\Personal\Workspace\Python\todo-app\todo_daily.py", line 170, in main
+    cleanup_stale_days()
+UnboundLocalError: local variable 'cleanup_stale_days' referenced before assignment
+
+[2026-09-01T05:30:46.898514]
+Traceback (most recent call last):
+  File "C:\Personal\Workspace\Python\todo-app\todo_daily.py", line 225, in <module>
+    main()
+  File "C:\Personal\Workspace\Python\todo-app\todo_daily.py", line 170, in main
+    cleanup_stale_days()
+UnboundLocalError: local variable 'cleanup_stale_days' referenced before assignment
+
+[2026-09-01T06:21:11.768819]
+Traceback (most recent call last):
+  File "C:\Personal\Workspace\Python\todo-app\todo_daily.py", line 225, in <module>
+    main()
+  File "C:\Personal\Workspace\Python\todo-app\todo_daily.py", line 170, in main
+    cleanup_stale_days()
+UnboundLocalError: local variable 'cleanup_stale_days' referenced before assignment
+
+[2026-09-01T23:18:53.232783]
+Traceback (most recent call last):
+  File "C:\Personal\Workspace\Python\todo-app\todo_daily.py", line 225, in <module>
+    main()
+  File "C:\Personal\Workspace\Python\todo-app\todo_daily.py", line 170, in main
+    cleanup_stale_days()
+UnboundLocalError: local variable 'cleanup_stale_days' referenced before assignment

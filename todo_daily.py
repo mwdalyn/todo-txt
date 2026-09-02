@@ -27,24 +27,49 @@ def main():
 	# =========================
 	# Load categories
 	# =========================
-	DEFAULT_CATEGORIES = ["Please create and update categories.json file in base directory for your todo-app!"]
+	EXAMPLE_CATEGORIES = {
+		"_comment": "List your todo categories below, in the order you want them to appear. Delete this comment line when done.",
+		"categories": ["Social", "Health", "Professional"]
+	}
 
-	if not CATEGORIES_FILE.exists(): # If categories.json missing, infill with default 
-		CATEGORIES_FILE.write_text(json.dumps({"categories": DEFAULT_CATEGORIES}, indent=2), encoding="utf-8")
+	if not CATEGORIES_FILE.exists():
+		CATEGORIES_FILE.write_text(json.dumps(EXAMPLE_CATEGORIES, indent=2), encoding="utf-8")
+		print(f"No categories.json found — created an example at {CATEGORIES_FILE}. "
+		      f"Edit it with your real categories, then re-run this script.")
+		sys.exit(0)
 
-	with CATEGORIES_FILE.open("r", encoding="utf-8") as f: # Update live categories
-		categories = json.load(f).get("categories", DEFAULT_CATEGORIES) # NOTE: Stopgap solution, want to prompt user directly if categories is "missing"
-
+	with CATEGORIES_FILE.open("r", encoding="utf-8") as f:
+		try:
+			categories = json.load(f)["categories"]
+		except (json.JSONDecodeError, KeyError):
+			print(f"categories.json at {CATEGORIES_FILE} is malformed or missing a 'categories' key. "
+			      f"Expected format: {json.dumps({'categories': ['Example1', 'Example2']})}")
+			sys.exit(1)
+	
 	# =========================
 	# Load recurring tasks
 	# =========================
 	RECURRING_FILE = BASE_DIR / "recurring.json"
 
 	if not RECURRING_FILE.exists():
-		RECURRING_FILE.write_text(json.dumps({cat: [] for cat in categories}, indent=2), encoding="utf-8")
+		EXAMPLE_RECURRING = {
+			"_comment": "List recurring task text under each category exactly as it's spelled in categories.json. Delete this comment line when done.",
+			**{cat: [] for cat in categories}
+		}
+		EXAMPLE_RECURRING[categories[0]] = ["Example recurring task"]  # one filled-in sample to show the shape
+		RECURRING_FILE.write_text(json.dumps(EXAMPLE_RECURRING, indent=2), encoding="utf-8")
+		print(f"No recurring.json found — created an example at {RECURRING_FILE}. "
+		      f"Edit it with your real recurring tasks, then re-run this script.")
+		sys.exit(0)
 
 	with RECURRING_FILE.open("r", encoding="utf-8") as f:
-		recurring = json.load(f)
+		try:
+			recurring = json.load(f)
+			recurring.pop("_comment", None)  # ignore the comment key if present
+		except json.JSONDecodeError:
+			print(f"recurring.json at {RECURRING_FILE} is malformed. "
+			      f"Expected format: {{\"CategoryName\": [\"task 1\", \"task 2\"]}}")
+			sys.exit(1)
 
 	# =========================
 	# Load streaks
