@@ -22,7 +22,7 @@ def main():
 	# Setup dir
 	# =========================
 
-	TODOS_DIR.mkdir(exist_ok=True)
+	TODOS_DIR.mkdir(parents=True, exist_ok=True)
 
 	# =========================
 	# Load categories

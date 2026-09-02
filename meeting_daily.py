@@ -31,7 +31,7 @@ def get_next_default_name(date_str):
 
 
 def main():
-	MEETINGNOTES_DIR.mkdir(exist_ok=True)
+	MEETINGNOTES_DIR.mkdir(parents=True, exist_ok=True)
 
 	now = datetime.now()
 	date_str = now.strftime("%Y-%m-%d")
