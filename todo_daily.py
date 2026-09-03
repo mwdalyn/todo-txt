@@ -92,6 +92,32 @@ def main():
 	last_file = existing_files[-1] if existing_files else None
 
 	# =========================
+	# Cleanup protocol for zero days
+	# =========================
+
+	def cleanup_stale_days():
+		"""Deletes any day (except the first ever and today) that had zero completions
+		and whose task contents exactly match the prior *kept* day — i.e. no progress
+		was recorded that day."""
+		all_files = sorted(TODOS_DIR.glob("todo_*.txt"))
+		if len(all_files) <= 1:
+			return  # nothing to compare against
+
+		keep_file = all_files[0]  # first day ever — never eligible for deletion
+		keep_tasks, _ = get_all_tasks(keep_file)
+
+		for f in all_files[1:]:
+			if f == today_file:
+				continue  # never touch today's file, it's still in progress
+			tasks, has_completed = get_all_tasks(f)
+			if not has_completed and tasks == keep_tasks:
+				f.unlink()
+				# keep_file/keep_tasks stay as the last *real* day for next comparison
+			else:
+				keep_file = f
+				keep_tasks = tasks
+
+	# =========================
 	# Carrover for unfinished tasks
 	# =========================
 	# TASK_PATTERN = re.compile(r"- \[(.)\] (.*)") # More permissive X case formatting
@@ -217,28 +243,6 @@ def main():
 				if state != " ":
 					has_completed = True
 		return tasks, has_completed
-
-	def cleanup_stale_days():
-		"""Deletes any day (except the first ever and today) that had zero completions
-		and whose task contents exactly match the prior *kept* day — i.e. no progress
-		was recorded that day."""
-		all_files = sorted(TODOS_DIR.glob("todo_*.txt"))
-		if len(all_files) <= 1:
-			return  # nothing to compare against
-
-		keep_file = all_files[0]  # first day ever — never eligible for deletion
-		keep_tasks, _ = get_all_tasks(keep_file)
-
-		for f in all_files[1:]:
-			if f == today_file:
-				continue  # never touch today's file, it's still in progress
-			tasks, has_completed = get_all_tasks(f)
-			if not has_completed and tasks == keep_tasks:
-				f.unlink()
-				# keep_file/keep_tasks stay as the last *real* day for next comparison
-			else:
-				keep_file = f
-				keep_tasks = tasks
  
 	# =========================
 	# Open today's file
