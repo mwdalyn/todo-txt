@@ -95,6 +95,24 @@ def main():
 	# Cleanup protocol for zero days
 	# =========================
 
+	def get_all_tasks(file_path):
+		"""Returns (list of (category, text) for every task line, has_any_completed: bool)."""
+		tasks = []
+		has_completed = False
+		current_cat = None
+		for line in file_path.read_text(encoding="utf-8").splitlines():
+			line = line.strip()
+			if line.startswith("## "):
+				current_cat = line[3:].strip()
+				continue
+			match = TASK_PATTERN.match(line)
+			if match:
+				state, text = match.group(2), match.group(3).strip()
+				tasks.append((current_cat, text))
+				if state != " ":
+					has_completed = True
+		return tasks, has_completed
+
 	def cleanup_stale_days():
 		"""Deletes any day (except the first ever and today) that had zero completions
 		and whose task contents exactly match the prior *kept* day — i.e. no progress
@@ -222,27 +240,6 @@ def main():
 
 		# Write today's file
 		today_file.write_text("\n".join(lines), encoding="utf-8")
-		
-	# =========================
-	# Cleanup: remove no-progress days
-	# =========================
-	def get_all_tasks(file_path):
-		"""Returns (list of (category, text) for every task line, has_any_completed: bool)."""
-		tasks = []
-		has_completed = False
-		current_cat = None
-		for line in file_path.read_text(encoding="utf-8").splitlines():
-			line = line.strip()
-			if line.startswith("## "):
-				current_cat = line[3:].strip()
-				continue
-			match = TASK_PATTERN.match(line)
-			if match:
-				state, text = match.group(2), match.group(3).strip()
-				tasks.append((current_cat, text))
-				if state != " ":
-					has_completed = True
-		return tasks, has_completed
  
 	# =========================
 	# Open today's file

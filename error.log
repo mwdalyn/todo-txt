@@ -62,3 +62,23 @@ Traceback (most recent call last):
   File "C:\Personal\Workspace\Python\todo-app\todo_daily.py", line 195, in main
     cleanup_stale_days()
 UnboundLocalError: local variable 'cleanup_stale_days' referenced before assignment
+
+[2026-09-03T21:35:41.634277]
+Traceback (most recent call last):
+  File "C:\Personal\Workspace\Python\todo-app\todo_daily.py", line 254, in <module>
+    main()
+  File "C:\Personal\Workspace\Python\todo-app\todo_daily.py", line 221, in main
+    cleanup_stale_days()
+  File "C:\Personal\Workspace\Python\todo-app\todo_daily.py", line 107, in cleanup_stale_days
+    keep_tasks, _ = get_all_tasks(keep_file)
+NameError: free variable 'get_all_tasks' referenced before assignment in enclosing scope
+
+[2026-09-03T21:35:43.999411]
+Traceback (most recent call last):
+  File "C:\Personal\Workspace\Python\todo-app\todo_daily.py", line 254, in <module>
+    main()
+  File "C:\Personal\Workspace\Python\todo-app\todo_daily.py", line 221, in main
+    cleanup_stale_days()
+  File "C:\Personal\Workspace\Python\todo-app\todo_daily.py", line 107, in cleanup_stale_days
+    keep_tasks, _ = get_all_tasks(keep_file)
+NameError: free variable 'get_all_tasks' referenced before assignment in enclosing scope
